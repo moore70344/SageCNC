@@ -1,16 +1,24 @@
-# SageCNC Discord Bot
 
-This bot is designed for CNC workflow automation in Discord.
+# SageCNC FullBot v4.1 – /vectorize presets: colorful & bare
 
-## Features
+**/vectorize** now supports presets:
+- `colorful` (default): keeps per-shape color **layers** and **true-color** on entities, gentle simplify, arc-fit on.
+- `bare`: minimal editing later — stronger simplify, removes tiny bits, single layer, no arcs.
+- `custom`: you control all parameters.
 
-- Basic test command: `!ping`
-- Scalable structure for future DXF, label, and PDF generation
+Examples:
+- `/vectorize preset:colorful target_width_mm:600`
+- `/vectorize preset:bare target_width_mm:600`
+- `/vectorize preset:custom threshold:190 simplify:3.0 min_feature:200 arc_fit:true arc_tol:1.0 keep_color:true`
 
-## Setup
+Still included:
+- `/cutlist` → labels.pdf + cutlist.csv + preview + ZIP
+- `/export prefix` → zip outputs in /tmp
 
-1. Copy `.env.example` to `.env` and paste your actual Discord token.
-2. Install dependencies: `pip install -r requirements.txt`
-3. Run the bot: `python main.py`
-
-Make sure your Python version is < 3.13 (recommended: 3.11)
+Deploy:
+```
+pip install -r requirements.txt
+cp .env.example .env  # add your token
+python main.py
+```
+On Railway: set `DISCORD_TOKEN` in Variables and deploy.
