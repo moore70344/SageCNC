@@ -1,35 +1,42 @@
 # main.py
-import os, threading, uvicorn
+import os
+import threading
+import uvicorn
 import discord
 from discord.ext import commands
 from dotenv import load_dotenv
-from web.app import app  # FastAPI dashboard
 
+# ---- load env ----
 load_dotenv()
 TOKEN = os.getenv("DISCORD_TOKEN")
 
-# Intents
+if not TOKEN:
+    raise SystemExit("Missing DISCORD_TOKEN in environment or .env")
+if len(TOKEN) < 50 or TOKEN.count(".") < 2:
+    raise SystemExit("DISCORD_TOKEN looks invalid (not a Bot token from the Bot tab).")
+
+# ---- intents & bot ----
 intents = discord.Intents.default()
 intents.message_content = True
-intents.guilds = True  # for channel name caching / analytics
+intents.guilds = True
 
-bot = commands.Bot(command_prefix="!", intents=intents)
+bot = commands.Bot(command_prefix="!", intents=intents, help_command=None)
 
 INITIAL_EXTS = [
-    "cogs.help",          # ← add this
+    "cogs.help",        # slash /help
     "cogs.woodworking",
     "cogs.cnctutor",
     "cogs.brainstorm",
     "cogs.ingest",
 ]
 
-def run_api():
+# ---- dashboard server ----
+def run_api() -> None:
     port = int(os.getenv("PORT", "8080"))
     uvicorn.run("web.app:app", host="0.0.0.0", port=port, log_level="info")
 
 @bot.event
 async def on_ready():
-    # Load cogs
     for ext in INITIAL_EXTS:
         try:
             await bot.load_extension(ext)
@@ -37,21 +44,26 @@ async def on_ready():
         except Exception as e:
             print(f"Failed {ext}: {e}")
 
-   @bot.command(name="resync")
-@commands.has_permissions(administrator=True)
-async def resync(ctx):
-    synced = await bot.tree.sync()
-    await ctx.send(f"🔁 Resynced {len(synced)} slash commands.")
-
+    try:
+        synced = await bot.tree.sync()
+        print(f"Synced {len(synced)} commands.")
+    except Exception as e:
+        print(f"Slash sync error: {e}")
 
     print(f"✅ {bot.user} is online.")
 
+# simple prefix ping (sanity check)
 @bot.command(name="ping")
-async def ping(ctx):
+async def ping(ctx: commands.Context):
     await ctx.send("Pong!")
+
+# admin-only manual resync for slash commands
+@bot.command(name="resync")
+@commands.has_permissions(administrator=True)
+async def resync(ctx: commands.Context):
+    synced = await bot.tree.sync()
+    await ctx.send(f"🔁 Resynced {len(synced)} slash commands.")
 
 if __name__ == "__main__":
     threading.Thread(target=run_api, daemon=True).start()
-    if not TOKEN:
-        raise SystemExit("Missing DISCORD_TOKEN")
     bot.run(TOKEN)
