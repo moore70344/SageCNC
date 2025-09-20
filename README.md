@@ -1,18 +1,16 @@
-# CNC Discord Bot Template (No Voice Features)
+# SageCNC Discord Bot
 
-This is a basic starter Discord bot built in Python without any voice dependencies.
+This bot is designed for CNC workflow automation in Discord.
 
 ## Features
-- ✅ Ping command (`!ping`)
-- 🧠 Ready for expansion (DXF parsing, .hop label creation, etc.)
-- ☁️ Cloud-ready (tested on Railway.app)
 
-## Usage
+- Basic test command: `!ping`
+- Scalable structure for future DXF, label, and PDF generation
 
-1. Set your environment variable: `DISCORD_TOKEN`
-2. Deploy to [Railway](https://railway.app/) or locally.
-3. Invite the bot to your server using the proper OAuth2 URL.
+## Setup
 
----
+1. Copy `.env.example` to `.env` and paste your actual Discord token.
+2. Install dependencies: `pip install -r requirements.txt`
+3. Run the bot: `python main.py`
 
-Want to add DXF parsing or label generation? Just ask.
+Make sure your Python version is < 3.13 (recommended: 3.11)
