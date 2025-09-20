@@ -16,6 +16,7 @@ intents.guilds = True  # for channel name caching / analytics
 bot = commands.Bot(command_prefix="!", intents=intents)
 
 INITIAL_EXTS = [
+    "cogs.help",          # ← add this
     "cogs.woodworking",
     "cogs.cnctutor",
     "cogs.brainstorm",
@@ -36,12 +37,12 @@ async def on_ready():
         except Exception as e:
             print(f"Failed {ext}: {e}")
 
-    # Sync slash commands
-    try:
-        synced = await bot.tree.sync()
-        print(f"Synced {len(synced)} commands.")
-    except Exception as e:
-        print(f"Slash sync error: {e}")
+   @bot.command(name="resync")
+@commands.has_permissions(administrator=True)
+async def resync(ctx):
+    synced = await bot.tree.sync()
+    await ctx.send(f"🔁 Resynced {len(synced)} slash commands.")
+
 
     print(f"✅ {bot.user} is online.")
 
