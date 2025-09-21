@@ -23,12 +23,15 @@ intents.guilds = True
 bot = commands.Bot(command_prefix="!", intents=intents, help_command=None)
 
 INITIAL_EXTS = [
-    "cogs.help",        # slash /help
+    "cogs.help",
     "cogs.woodworking",
     "cogs.cnctutor",
     "cogs.brainstorm",
     "cogs.ingest",
+    "cogs.mention_router",
+    "cogs.study",              # ← new
 ]
+
 
 # ---- dashboard server ----
 def run_api() -> None:
