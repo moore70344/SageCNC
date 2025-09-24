@@ -1,24 +1,11 @@
+# CNC Sage (Merged v6.1 — full features)
+Conflict-free merge of v4_13 and AllInOne v5, with DXF export & PDF labels restored.
 
-# SageCNC FullBot v4.1 – /vectorize presets: colorful & bare
-
-**/vectorize** now supports presets:
-- `colorful` (default): keeps per-shape color **layers** and **true-color** on entities, gentle simplify, arc-fit on.
-- `bare`: minimal editing later — stronger simplify, removes tiny bits, single layer, no arcs.
-- `custom`: you control all parameters.
-
-Examples:
-- `/vectorize preset:colorful target_width_mm:600`
-- `/vectorize preset:bare target_width_mm:600`
-- `/vectorize preset:custom threshold:190 simplify:3.0 min_feature:200 arc_fit:true arc_tol:1.0 keep_color:true`
-
-Still included:
-- `/cutlist` → labels.pdf + cutlist.csv + preview + ZIP
-- `/export prefix` → zip outputs in /tmp
-
-Deploy:
-```
+## Quickstart
+```ps1
+python -m venv .venv
+. .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
-cp .env.example .env  # add your token
-python main.py
+copy .env.example .env  # set DISCORD_TOKEN, APPLICATION_ID
+python .\main.py
 ```
-On Railway: set `DISCORD_TOKEN` in Variables and deploy.

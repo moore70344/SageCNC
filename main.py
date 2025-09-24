@@ -1,72 +1,83 @@
-# main.py
-import os
-import threading
-import uvicorn
+import os, asyncio, threading
 import discord
 from discord.ext import commands
+from discord import app_commands
 from dotenv import load_dotenv
 
-# ---- load env ----
 load_dotenv()
-TOKEN = os.getenv("DISCORD_TOKEN")
+TOKEN = os.getenv("DISCORD_TOKEN","").strip()
+APP_ID = int(os.getenv("APPLICATION_ID","0") or "0")
 
-if not TOKEN:
-    raise SystemExit("Missing DISCORD_TOKEN in environment or .env")
-if len(TOKEN) < 50 or TOKEN.count(".") < 2:
-    raise SystemExit("DISCORD_TOKEN looks invalid (not a Bot token from the Bot tab).")
-
-# ---- intents & bot ----
 intents = discord.Intents.default()
 intents.message_content = True
+intents.members = True
 intents.guilds = True
 
-bot = commands.Bot(command_prefix="!", intents=intents, help_command=None)
+bot = commands.Bot(command_prefix="!", intents=intents, application_id=APP_ID)
 
-INITIAL_EXTS = [
-    "cogs.help",
-    "cogs.woodworking",
-    "cogs.cnctutor",
-    "cogs.brainstorm",
-    "cogs.ingest",
-    "cogs.mention_router",
-    "cogs.study",              # ← new
-]
+def start_api():
+    import uvicorn
+    try:
+        from web.app import app
+    except Exception:
+        return
+    uvicorn.run(app, host="0.0.0.0", port=8080, log_level="info")
 
-
-# ---- dashboard server ----
-def run_api() -> None:
-    port = int(os.getenv("PORT", "8080"))
-    uvicorn.run("web.app:app", host="0.0.0.0", port=port, log_level="info")
+t = threading.Thread(target=start_api, daemon=True)
+t.start()
 
 @bot.event
 async def on_ready():
-    for ext in INITIAL_EXTS:
-        try:
-            await bot.load_extension(ext)
-            print(f"Loaded {ext}")
-        except Exception as e:
-            print(f"Failed {ext}: {e}")
-
     try:
         synced = await bot.tree.sync()
-        print(f"Synced {len(synced)} commands.")
+        print(f"Slash commands synced: {len(synced)}")
     except Exception as e:
-        print(f"Slash sync error: {e}")
+        print("Slash sync failed:", e)
+    await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name="/help"))
+    print(f"Logged in as {bot.user}")
 
-    print(f"✅ {bot.user} is online.")
-
-# simple prefix ping (sanity check)
 @bot.command(name="ping")
-async def ping(ctx: commands.Context):
-    await ctx.send("Pong!")
+async def ping(ctx): await ctx.send("Pong!")
 
-# admin-only manual resync for slash commands
-@bot.command(name="resync")
-@commands.has_permissions(administrator=True)
-async def resync(ctx: commands.Context):
+@bot.tree.command(name="help", description="Show CNC Sage commands")
+async def help_cmd(interaction: discord.Interaction):
+    text = (
+        "**CNC Sage — Commands**\n"
+        "/askdocs — answer using your uploads (tries to cite)\n"
+        "/woodworking — how-to woodworking\n"
+        "/cnctutor — CNC Q&A\n"
+        "/brainstorm — project ideas\n"
+        "/ingest — upload files\n"
+        "/listdocs — list files\n"
+        "/vectorize — preview and DXF export\n"
+        "/cutlist — starter list + PDF labels\n"
+        "/reactionroles_setup — reaction role panel\n"
+        "/rolechannel_create|archive|unarchive — role workspaces"
+    )
+    await interaction.response.send_message(text, ephemeral=True)
+
+@bot.tree.command(name="resync", description="Admin: resync slash commands")
+@app_commands.checks.has_permissions(administrator=True)
+async def resync(interaction: discord.Interaction):
     synced = await bot.tree.sync()
-    await ctx.send(f"🔁 Resynced {len(synced)} slash commands.")
+    await interaction.response.send_message(f"Resynced {len(synced)} commands.", ephemeral=True)
+
+@bot.event
+async def on_message(message: discord.Message):
+    if message.author.bot: return
+    if bot.user and bot.user.mentioned_in(message):
+        await message.reply("Hey! Try `/askdocs`, `/woodworking`, or `/cnctutor`. Add refs with `/ingest`.")
+    await bot.process_commands(message)
+
+async def load_all():
+    for ext in ("cogs.ingest","cogs.qa_generic","cogs.vector_tools","cogs.cutlist_labels","cogs.reaction_roles","cogs.role_channels"):
+        try:
+            await bot.load_extension(ext)
+        except Exception as e:
+            print("Failed to load", ext, e)
 
 if __name__ == "__main__":
-    threading.Thread(target=run_api, daemon=True).start()
+    if not TOKEN or len(TOKEN) < 50:
+        raise SystemExit("DISCORD_TOKEN missing or looks invalid. Put it in .env (spaces around '=' allowed).")
+    asyncio.run(load_all())
     bot.run(TOKEN)
